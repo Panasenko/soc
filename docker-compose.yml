@@ -1,0 +1,64 @@
+version: "3.3"
+
+services:
+  nginx:
+   image: nginx:latest
+   container_name: nginx
+   ports:
+   - "80:80"
+   - "443:443"
+   volumes:
+   - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+   - ./nginx/ssl/:/etc/ssl/
+   links:
+   - misp
+   - crits  
+   depends_on:
+   - misp
+   - crits  
+   networks:
+    soc_net:
+        ipv4_address: 10.2.0.2 
+          
+  crits:
+   image: tmiklas/crits-docker
+   container_name: crits
+   ports:
+   - "8080:8080"
+   restart: always
+   networks:
+    soc_net:
+       ipv4_address: 10.2.0.3
+
+     ################################################################################################
+     #
+     #  Initialize Database MISP
+     #  docker run -it --rm -v $docker-root/misp-db:/var/lib/mysql harvarditsecurity/misp /init-db
+     #
+     ################################################################################################
+
+  misp:
+   image: harvarditsecurity/misp
+   container_name: misp
+   ports:
+   - "4443:443"
+   - "8181:8080"
+   - "3306:3306"
+   - "6666:6666"
+   volumes:
+   -  ./misp/misp-db:/var/lib/mysql
+   networks:
+     soc_net:
+       ipv4_address: 10.2.0.4
+   restart: always
+    
+volumes:
+  misp_v:
+
+networks:
+    soc_net:
+      driver: bridge
+      ipam:
+        driver: default
+        config:
+          - subnet: 10.2.0.0/24
